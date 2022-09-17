@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_multiple_files = false;
+option java_package = "com.panxianhao.entity";
+option java_outer_classname = "SimpleMessage";
+
+
+package simple;
+
+message Request{
+  string name = 1;
+}
+
+message Response {
+  int32 code = 1;
+  string msg = 2;
+}
