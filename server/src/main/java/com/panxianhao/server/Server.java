@@ -13,6 +13,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="panxianhao@wxchina.com">panxianhao</a>
@@ -36,6 +39,7 @@ public class Server {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast("decoder", new ProtobufDecoder(SimpleMessage.getDefaultInstance()));
                             pipeline.addLast("encoder", new ProtobufEncoder());
+                            pipeline.addLast(new IdleStateHandler(5, 5, 60, TimeUnit.SECONDS));
                             pipeline.addLast("server-handler", new GroupChatServerHandler());
                         }
                     })

@@ -6,6 +6,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.net.SocketAddress;
@@ -20,6 +22,9 @@ import java.util.List;
  */
 public class GroupChatServerHandler extends SimpleChannelInboundHandler<SimpleMessage> {
     private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    private int times = 0;
+
+    private static final int MAX_TIMES = 3;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SimpleMessage simpleMessage) throws Exception {
@@ -27,11 +32,11 @@ public class GroupChatServerHandler extends SimpleChannelInboundHandler<SimpleMe
         for (Channel c : channels) {
             if (c != channel) {
                 c.writeAndFlush(addPrefix(simpleMessage, c.remoteAddress().toString(), false));
-            }
-            else {
+            } else {
                 c.writeAndFlush(addPrefix(simpleMessage, c.remoteAddress().toString(), true));
             }
         }
+        times = 0;
     }
 
     @Override
@@ -68,5 +73,20 @@ public class GroupChatServerHandler extends SimpleChannelInboundHandler<SimpleMe
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         ctx.close();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
+            if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
+                System.out.println(ctx.channel().remoteAddress() + " write time out");
+                times++;
+                if (times == MAX_TIMES) {
+                    System.out.println("closed " + ctx.channel().remoteAddress() + " due to write time out " + MAX_TIMES + "times");
+                    ctx.channel().close();
+                }
+            }
+        }
     }
 }
